@@ -1,92 +1,116 @@
 const $btnKick = document.getElementById('btn-kick')
 const $btnQuick = document.getElementById('btn-quick')
-
-const character = {
-  name: 'Pikachu',
-  defaultHP: 100,
-  damageHP: 100,
-  elHP: document.getElementById('health-character'),
-  elProgressbar: document.getElementById('progressbar-character'),
-
-  renderHPLife () {
-    this.elHP.innerText = this.damageHP + ' / ' + this.defaultHP
-  },
-
-  renderProgressbarHP () {
-    this.elProgressbar.style.width = this.damageHP + '%'
-    if (this.damageHP > 60) {
-      this.elProgressbar.style.background = '#24db2aff'
-    } else if (this.damageHP > 30) {
-      this.elProgressbar.style.background = '#FF9800'
-    } else {
-      this.elProgressbar.style.background = '#F44336'
-    }
-  },
-
-  renderHP () {
-    this.renderHPLife()
-    this.renderProgressbarHP()
-  },
-
-  changeHP (count) {
-    if (this.damageHP <= count) {
-      this.damageHP = 0
-      this.renderHP()
-      if (!this.lost) {
-        alert('Бідний ' + this.name + ' програв бій!')
-        this.lost = true
-      }
-    } else {
-      this.damageHP -= count
-      this.renderHP()
-    }
-  }
-}
-
-const enemy1 = {
-  name: 'Squirtle',
-  defaultHP: 100,
-  damageHP: 100,
-  elHP: document.getElementById('health-enemy1'),
-  elProgressbar: document.getElementById('progressbar-enemy1'),
-
-  renderHPLife: character.renderHPLife,
-  renderProgressbarHP: character.renderProgressbarHP,
-  renderHP: character.renderHP,
-  changeHP: character.changeHP
-}
-
-const enemy2 = {
-  name: 'Wobbuffet',
-  defaultHP: 100,
-  damageHP: 100,
-  elHP: document.getElementById('health-enemy2'),
-  elProgressbar: document.getElementById('progressbar-enemy2'),
-
-  renderHPLife: character.renderHPLife,
-  renderProgressbarHP: character.renderProgressbarHP,
-  renderHP: character.renderHP,
-  changeHP: character.changeHP
-}
+const $logs = document.getElementById('logs')
 
 function random (num) {
   return Math.ceil(Math.random() * num)
 }
 
-function attack (person, maxDamage) {
-  person.changeHP(random(maxDamage))
+function generateLog (firstPerson, secondPerson, damage, hpLeft, hpTotal) {
+  const { name: name1 } = firstPerson
+  const { name: name2 } = secondPerson
+
+  const logs = [
+    `${name1} вирішив відпочити, але ${name2} не пропустив шанс ударити.`,
+    `${name1} кліпнув очима, а ${name2} використав це, щоб завдати потужного удару.`,
+    `${name1} промовив «Піка-Пі!», але ${name2} відповів атакою.`,
+    `${name1} послизнувся, і ${name2} без вагань наніс точний удар.`,
+    `${name1} усміхнувся, а ${name2} вирішив, що час діяти — удар!`,
+    `${name1} відволікся на метелика, ${name2} скористався моментом.`,
+    `${name1} втомився, а ${name2} провів серію швидких атак.`,
+    `${name1} зробив крок уперед, але ${name2} був на крок попереду.`,
+    `${name1} підняв хвіст, але ${name2} вже атакував.`,
+    `${name1} приготувався до захисту, проте ${name2} пробив оборону.`
+  ]
+
+  const text = logs[random(logs.length) - 1]
+  return `${text} -${damage} [${hpLeft}/${hpTotal}]`
 }
 
-$btnKick.addEventListener('click', function () {
+function renderLog (text) {
+  const p = document.createElement('p')
+  p.innerText = text
+  $logs.insertBefore(p, $logs.firstChild)
+}
+
+function createPlayer ({ name, id }) {
+  const elHP = document.getElementById(`health-${id}`)
+  const elProgressbar = document.getElementById(`progressbar-${id}`)
+
+  const player = {
+    name,
+    defaultHP: 100,
+    damageHP: 100,
+    lost: false,
+    elHP,
+    elProgressbar,
+
+    renderHPLife () {
+      this.elHP.innerText = `${this.damageHP} / ${this.defaultHP}`
+    },
+
+    renderProgressbarHP () {
+      this.elProgressbar.style.width = `${this.damageHP}%`
+      if (this.damageHP > 60) {
+        this.elProgressbar.style.background = '#24db2aff'
+      } else if (this.damageHP > 30) {
+        this.elProgressbar.style.background = '#FF9800'
+      } else {
+        this.elProgressbar.style.background = '#F44336'
+      }
+    },
+
+    renderHP () {
+      this.renderHPLife()
+      this.renderProgressbarHP()
+    },
+
+    changeHP (count, enemy) {
+      if (this.damageHP <= count) {
+        this.damageHP = 0
+        this.renderHP()
+        if (!this.lost) {
+          alert(`Бідний ${this.name} програв бій!`)
+          this.lost = true
+        }
+      } else {
+        this.damageHP -= count
+        this.renderHP()
+
+        const log = generateLog(
+          enemy,
+          this,
+          count,
+          this.damageHP,
+          this.defaultHP
+        )
+        renderLog(log)
+      }
+    }
+  }
+
+  return player
+}
+
+const character = createPlayer({ name: 'Pikachu', id: 'character' })
+const enemy1 = createPlayer({ name: 'Squirtle', id: 'enemy1' })
+const enemy2 = createPlayer({ name: 'Wobbuffet', id: 'enemy2' })
+
+function attack (attacker, defender, maxDamage) {
+  const damage = random(maxDamage)
+  defender.changeHP(damage, attacker)
+}
+
+$btnKick.addEventListener('click', () => {
   console.log('Thunder Jolt!')
-  attack(enemy1, 20)
-  attack(enemy2, 20)
+  attack(character, enemy1, 20)
+  attack(character, enemy2, 20)
 })
 
-$btnQuick.addEventListener('click', function () {
+$btnQuick.addEventListener('click', () => {
   console.log('Quick Attack!')
-  attack(enemy1, 10)
-  attack(enemy2, 10)
+  attack(character, enemy1, 10)
+  attack(character, enemy2, 10)
 })
 
 function init () {
